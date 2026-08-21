@@ -1,12 +1,16 @@
-# Import referenced project into workspace
+# Import GitHub repo into current project
 
 ## Goal
-Check out the project referenced by the user so we can review or reuse its code/assets.
+Bring the codebase from `https://github.com/backuparisanto2-cloud/cheerful-sync-dance.git` into the current Lovable project.
 
-## Current blocker
-The supplied link `https://lovable.dev/invite/IJ9NFUR` is a referral/signup invite (it redirects to `/signup?referral_code=IJ9NFUR`). It does not contain the project name or ID required by the cross-project checkout tool.
+## Background
+Lovable does not support directly importing an existing GitHub repo into a project. The workaround is to clone the repo and manually merge its files into the current project.
 
 ## Plan
-1. Ask the user for the actual project name or project ID from their Lovable workspace.
-2. Once provided, run the cross-project checkout tool.
-3. Explore the snapshot and report what files are available to copy or review.
+1. Clone the GitHub repo into a temporary directory (`/tmp/github-import`).
+2. Inspect the repo structure (framework, dependencies, routes, components, assets, env/config).
+3. Compare against the current project structure to identify conflicts.
+4. Merge/copy the relevant files into the current project, keeping the existing Lovable bootstrap files (router, root route, config) unless the repo is also a Lovable/TanStack Start project.
+5. Install any missing dependencies.
+6. Run build/typecheck to verify everything compiles.
+7. Report any runtime issues or manual follow-up steps.

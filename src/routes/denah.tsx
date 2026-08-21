@@ -23,8 +23,10 @@ import { formatRupiah } from "@/lib/inventory";
 const FLOOR_KEYS: FloorKey[] = ["1", "2", "3", "rooftop"];
 
 function parseFloor(value: unknown): FloorKey {
-  return FLOOR_KEYS.includes(value as FloorKey) ? (value as FloorKey) : "1";
+  const raw = typeof value === "number" ? String(value) : value;
+  return FLOOR_KEYS.includes(raw as FloorKey) ? (raw as FloorKey) : "1";
 }
+
 
 export const Route = createFileRoute("/denah")({
   validateSearch: (search: Record<string, unknown>) => ({

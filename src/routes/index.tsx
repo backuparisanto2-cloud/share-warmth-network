@@ -175,6 +175,8 @@ function Dashboard() {
             ))}
             <Link
               to="/fasilitas"
+              search={{ q: undefined }}
+
               className="flex items-center justify-between rounded-lg border border-gold-line px-4 py-3 text-sm transition-colors hover:bg-accent"
             >
               <span>Fasilitas Utama Kost</span>

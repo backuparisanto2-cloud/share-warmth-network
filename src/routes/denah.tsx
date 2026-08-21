@@ -28,8 +28,8 @@ function parseFloor(value: unknown): FloorKey {
 
 export const Route = createFileRoute("/denah")({
   validateSearch: (search: Record<string, unknown>) => ({
-    lantai: parseFloor(search.lantai),
-    kamar: typeof search.kamar === "string" ? search.kamar : undefined,
+    lantai: parseFloor(search['lantai']),
+    kamar: typeof search['kamar'] === "string" ? (search['kamar'] as string) : undefined,
   }),
   head: () => ({
     meta: [
@@ -163,7 +163,7 @@ function FloorPlanPage() {
             type="button"
             onClick={() => {
               setSelectedId(null);
-              void navigate({ search: { lantai: item.key } });
+              void navigate({ search: { lantai: item.key, kamar: undefined } });
             }}
             className={`shrink-0 rounded-full border px-4 py-2 text-sm transition-colors ${
               item.key === plan.key

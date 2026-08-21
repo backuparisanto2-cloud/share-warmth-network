@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, DoorClosed, MapPin } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
@@ -58,6 +58,15 @@ function FloorPlanPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const plan = floorPlan(lantai);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsDesktop(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   const rooms = useQuery(roomsQuery);
   const tenants = useQuery(tenantsQuery);
@@ -234,7 +243,7 @@ function FloorPlanPage() {
       </div>
 
       <Sheet
-        open={Boolean(selected)}
+        open={Boolean(selected) && !isDesktop}
         onOpenChange={(open) => {
           if (!open) setSelectedId(null);
         }}

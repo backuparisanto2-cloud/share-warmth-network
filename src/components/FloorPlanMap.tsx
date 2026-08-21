@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { FloorPlan, Hotspot } from "@/lib/floorplan";
+import { cropRect, type FloorPlan, type Hotspot } from "@/lib/floorplan";
 
 export type HotspotTone = "occupied" | "vacant" | "common";
 
@@ -14,6 +14,7 @@ export type HotspotStatus = {
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
+const MAX_CHIPS = 4;
 
 const toneClass: Record<HotspotTone, string> = {
   occupied: "border-primary/70 bg-primary/25 hover:bg-primary/35",
@@ -30,11 +31,21 @@ export function FloorPlanMap({
   statusFor,
   selectedId,
   onSelect,
+  codesFor,
+  showCodes = false,
+  fullscreen = false,
+  onToggleFullscreen,
+  className,
 }: {
   plan: FloorPlan;
   statusFor: (hotspot: Hotspot) => HotspotStatus;
   selectedId: string | null;
   onSelect: (hotspot: Hotspot) => void;
+  codesFor?: (hotspot: Hotspot) => string[];
+  showCodes?: boolean;
+  fullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -50,7 +61,7 @@ export function FloorPlanMap({
 
   useEffect(() => {
     reset();
-  }, [plan.key, reset]);
+  }, [plan.key, fullscreen, reset]);
 
   const zoomAt = useCallback((next: number, px: number, py: number) => {
     const { zoom: z, offset: o } = stateRef.current;
@@ -58,9 +69,7 @@ export function FloorPlanMap({
     const k = clamped / z;
     setZoom(clamped);
     setOffset(
-      clamped === MIN_ZOOM
-        ? { x: 0, y: 0 }
-        : { x: px - (px - o.x) * k, y: py - (py - o.y) * k },
+      clamped === MIN_ZOOM ? { x: 0, y: 0 } : { x: px - (px - o.x) * k, y: py - (py - o.y) * k },
     );
   }, []);
 
@@ -106,62 +115,114 @@ export function FloorPlanMap({
     if (dragRef.current?.id === event.pointerId) dragRef.current = null;
   };
 
+  const { crop } = plan;
+  const frameRatio = (crop.h / crop.w) * plan.aspect * 100;
+  const codeThreshold = fullscreen ? 1 : 1.6;
+  const chipsVisible = showCodes && zoom >= codeThreshold;
+
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${className ?? ""}`}>
       <div
         ref={containerRef}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="relative overflow-hidden rounded-lg border border-gold-line bg-white"
+        className={`relative overflow-hidden rounded-lg border border-gold-line bg-white ${
+          fullscreen ? "h-full" : ""
+        }`}
         style={{ touchAction: "none", cursor: zoom > 1 ? "grab" : "default" }}
       >
         <div
-          className="relative"
+          className="relative h-full w-full overflow-hidden"
           style={{
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: "0 0",
           }}
         >
-          <img
-            src={plan.image}
-            alt={`Denah ${plan.label} Lavin Kost Purwokerto`}
-            className="block w-full select-none"
-            draggable={false}
-          />
-          {plan.hotspots.map((hotspot) => {
-            const status = statusFor(hotspot);
-            const active = hotspot.id === selectedId;
-            return (
-              <button
-                key={hotspot.id}
-                type="button"
-                title={hotspot.label}
-                aria-label={hotspot.label}
-                onClick={() => {
-                  if (dragRef.current?.moved) return;
-                  onSelect(hotspot);
-                }}
-                className={`absolute rounded-[3px] border transition-colors ${toneClass[status.tone]} ${
-                  active ? "ring-2 ring-primary ring-offset-1" : ""
-                }`}
-                style={{
-                  left: `${hotspot.x}%`,
-                  top: `${hotspot.y}%`,
-                  width: `${hotspot.w}%`,
-                  height: `${hotspot.h}%`,
-                }}
-              >
-                {status.alert ? (
-                  <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-destructive" />
-                ) : null}
-                {status.warranty ? (
-                  <span className="absolute bottom-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-warning" />
-                ) : null}
-              </button>
-            );
-          })}
+          <div
+            className={fullscreen ? "relative mx-auto h-full" : "relative w-full"}
+            style={
+              fullscreen
+                ? { aspectRatio: `${crop.w / (crop.h * plan.aspect)}`, maxWidth: "100%" }
+                : { paddingTop: `${frameRatio}%` }
+            }
+          >
+            <img
+              src={plan.image}
+              alt={`Denah ${plan.label} Lavin Kost Purwokerto`}
+              className="absolute select-none"
+              draggable={false}
+              style={{
+                width: `${(100 / crop.w) * 100}%`,
+                left: `${-(crop.x / crop.w) * 100}%`,
+                top: `${-(crop.y / crop.h) * 100}%`,
+              }}
+            />
+            {plan.hotspots.map((hotspot) => {
+              const status = statusFor(hotspot);
+              const active = hotspot.id === selectedId;
+              const rect = cropRect(crop, hotspot);
+              const codes = codesFor?.(hotspot) ?? [];
+              return (
+                <button
+                  key={hotspot.id}
+                  type="button"
+                  title={
+                    codes.length ? `${hotspot.label} — ${codes.join(", ")}` : hotspot.label
+                  }
+                  aria-label={hotspot.label}
+                  onClick={() => {
+                    if (dragRef.current?.moved) return;
+                    onSelect(hotspot);
+                  }}
+                  className={`absolute overflow-hidden rounded-[3px] border transition-colors ${
+                    toneClass[status.tone]
+                  } ${active ? "ring-2 ring-primary ring-offset-1" : ""}`}
+                  style={{
+                    left: `${rect.left}%`,
+                    top: `${rect.top}%`,
+                    width: `${rect.width}%`,
+                    height: `${rect.height}%`,
+                  }}
+                >
+                  {chipsVisible && codes.length ? (
+                    <span
+                      className="flex flex-wrap content-start justify-center gap-[2px] p-[2px] leading-none"
+                      style={{ fontSize: `${9 / zoom}px` }}
+                    >
+                      {codes.slice(0, MAX_CHIPS).map((code) => (
+                        <span
+                          key={code}
+                          className="rounded bg-background/85 px-[3px] py-[1px] font-mono text-foreground"
+                        >
+                          {code}
+                        </span>
+                      ))}
+                      {codes.length > MAX_CHIPS ? (
+                        <span className="rounded bg-foreground/70 px-[3px] py-[1px] font-mono text-background">
+                          +{codes.length - MAX_CHIPS}
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : codes.length ? (
+                    <span
+                      className="absolute inset-x-0 bottom-[2px] text-center font-mono text-muted-foreground"
+                      style={{ fontSize: `${8 / zoom}px` }}
+                    >
+                      {codes.length}
+                    </span>
+                  ) : null}
+                  {status.alert ? (
+                    <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+                  ) : null}
+                  {status.warranty ? (
+                    <span className="absolute bottom-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-warning" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="absolute right-2 bottom-2 flex gap-1">
@@ -192,11 +253,24 @@ export function FloorPlanMap({
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
+          {onToggleFullscreen ? (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-9 w-9"
+              aria-label={fullscreen ? "Keluar layar penuh" : "Layar penuh denah"}
+              onClick={onToggleFullscreen}
+            >
+              {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          ) : null}
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Gulir / pinch untuk zoom, geser untuk berpindah area. Ketuk area untuk melihat detail.
-      </p>
+      {fullscreen ? null : (
+        <p className="text-xs text-muted-foreground">
+          Gulir / pinch untuk zoom, geser untuk berpindah area. Ketuk area untuk melihat detail.
+        </p>
+      )}
     </div>
   );
 }

@@ -20,11 +20,17 @@ export type Hotspot = {
   h: number;
 };
 
+export type CropBox = { x: number; y: number; w: number; h: number };
+
 export type FloorPlan = {
   key: FloorKey;
   label: string;
   short: string;
   image: string;
+  /** tinggi / lebar gambar asli */
+  aspect: number;
+  /** area gambar yang ditampilkan (persen), untuk memangkas ruang putih */
+  crop: CropBox;
   hotspots: Hotspot[];
 };
 
@@ -115,12 +121,34 @@ const rooftopHotspots: Hotspot[] = [
   umum("rt-rooftop-timur", "Rooftop Timur", ["rooftop", "taman", "santai"], 73, 21.5, 11.5, 44),
 ];
 
+/** Gambar lantai persegi: denah hanya mengisi bagian tengah. */
+const FLOOR_CROP: CropBox = { x: 9.5, y: 21, w: 81, h: 47 };
+const ROOFTOP_CROP: CropBox = { x: 14, y: 18, w: 74, h: 51 };
+
 export const FLOOR_PLANS: FloorPlan[] = [
-  { key: "1", label: "Lantai 1", short: "L1", image: lantai1.url, hotspots: lantai1Hotspots },
-  { key: "2", label: "Lantai 2", short: "L2", image: lantai2.url, hotspots: lantai2Hotspots },
-  { key: "3", label: "Lantai 3", short: "L3", image: lantai3.url, hotspots: lantai3Hotspots },
-  { key: "rooftop", label: "Rooftop", short: "RT", image: rooftop.url, hotspots: rooftopHotspots },
+  { key: "1", label: "Lantai 1", short: "L1", image: lantai1.url, aspect: 1, crop: FLOOR_CROP, hotspots: lantai1Hotspots },
+  { key: "2", label: "Lantai 2", short: "L2", image: lantai2.url, aspect: 1, crop: FLOOR_CROP, hotspots: lantai2Hotspots },
+  { key: "3", label: "Lantai 3", short: "L3", image: lantai3.url, aspect: 1, crop: FLOOR_CROP, hotspots: lantai3Hotspots },
+  {
+    key: "rooftop",
+    label: "Rooftop",
+    short: "RT",
+    image: rooftop.url,
+    aspect: 933 / 1160,
+    crop: ROOFTOP_CROP,
+    hotspots: rooftopHotspots,
+  },
 ];
+
+/** Ubah koordinat hotspot (persen gambar) menjadi persen terhadap area crop. */
+export function cropRect(crop: CropBox, hotspot: Hotspot) {
+  return {
+    left: ((hotspot.x - crop.x) / crop.w) * 100,
+    top: ((hotspot.y - crop.y) / crop.h) * 100,
+    width: (hotspot.w / crop.w) * 100,
+    height: (hotspot.h / crop.h) * 100,
+  };
+}
 
 export function floorPlan(key: FloorKey): FloorPlan {
   return FLOOR_PLANS.find((f) => f.key === key) ?? FLOOR_PLANS[0]!;

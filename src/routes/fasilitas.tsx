@@ -38,6 +38,9 @@ import { formInitial, itemPayload } from "@/lib/item-payload";
 
 
 export const Route = createFileRoute("/fasilitas")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search['q'] === "string" ? (search['q'] as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Fasilitas Utama Kost — Inventaris Lavin Kost" },
@@ -76,7 +79,8 @@ const SORT_LABEL: Record<SortKey, string> = {
 const PAGE_SIZES = [10, 25, 50, 100];
 
 function SharedFacilities() {
-  const [keyword, setKeyword] = useState("");
+  const { q: initialKeyword } = Route.useSearch();
+  const [keyword, setKeyword] = useState(initialKeyword ?? "");
   const [category, setCategory] = useState<string>("Semua");
   const [condition, setCondition] = useState<string>("Semua");
   const [sort, setSort] = useState<SortKey>("nama-asc");

@@ -6,6 +6,7 @@ import {
   FileBarChart,
   Wallet,
   Coins,
+  Map,
 
   Menu,
   Type,
@@ -26,6 +27,7 @@ import { TEXT_SIZES, useTextSize } from "@/lib/text-size";
 const nav = [
   { to: "/", label: "Ringkasan", icon: LayoutDashboard },
   { to: "/kamar", label: "Kamar", icon: DoorClosed },
+  { to: "/denah", label: "Denah", icon: Map },
   { to: "/fasilitas", label: "Fasilitas Utama", icon: Wrench },
   { to: "/pendapatan", label: "Pendapatan", icon: Coins },
   { to: "/pengeluaran", label: "Pengeluaran", icon: Wallet },

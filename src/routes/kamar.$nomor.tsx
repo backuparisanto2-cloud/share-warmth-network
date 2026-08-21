@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, Sparkles, Search } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Sparkles, Search, Map } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -29,6 +29,7 @@ import {
   updateRoomItem,
 } from "@/lib/inventory";
 import { formInitial, itemPayload } from "@/lib/item-payload";
+import { floorKeyForRoom } from "@/lib/floorplan";
 
 export const Route = createFileRoute("/kamar/$nomor")({
   head: ({ params }) => ({
@@ -83,6 +84,14 @@ function RoomDetail() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> Kembali ke daftar kamar
+      </Link>
+
+      <Link
+        to="/denah"
+        search={{ lantai: floorKeyForRoom(room?.floor ?? 1), kamar: nomor }}
+        className="ml-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <Map className="h-4 w-4" /> Lihat di denah
       </Link>
 
       {room ? (

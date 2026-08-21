@@ -251,9 +251,10 @@ function FloorPlanPage() {
         }}
       >
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto lg:hidden">
-          <SheetHeader className="text-left">
-            <SheetTitle className="font-display text-lg">{selected?.label}</SheetTitle>
+          <SheetHeader className="sr-only">
+            <SheetTitle>{selected?.label}</SheetTitle>
           </SheetHeader>
+
           <div className="pb-4">{detail}</div>
         </SheetContent>
       </Sheet>
